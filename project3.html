@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Split & Share Ultra | Pro Expense Engine</title>
+  <style>
+    :root {
+      --primary: #6366f1;
+      --primary-hover: #4f46e5;
+      --success: #10b981;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --bg: #0b0f19;
+      --panel: #151d30;
+      --panel-alt: #1f2b45;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --border: #283756;
+      --radius: 12px;
+      --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
+    }
+
+    [data-theme="light"] {
+      --bg: #f8fafc;
+      --panel: #ffffff;
+      --panel-alt: #f1f5f9;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+    body { background-color: var(--bg); color: var(--text); padding: 20px; line-height: 1.5; transition: background 0.2s, color 0.2s; }
+    .container { max-width: 1240px; margin: 0 auto; }
+
+    header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
+    .brand h1 { font-size: 1.8rem; font-weight: 800; background: linear-gradient(135deg, #818cf8, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .brand p { font-size: 0.85rem; color: var(--text-muted); }
+
+    .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 14px; border: none; border-radius: 8px; background: var(--primary); color: #fff; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: 0.2s; }
+    .btn:hover { background: var(--primary-hover); }
+    .btn-sm { padding: 4px 10px; font-size: 0.75rem; width: auto; }
+    .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
+    .btn-outline:hover { background: var(--panel-alt); }
+    .btn-success { background: var(--success); color: #fff; }
+    .btn-success:hover { background: #059669; }
+    .btn-danger { background: var(--danger); color: #fff; }
+
+    .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 20px; }
+    .metric-card { background: var(--panel); padding: 16px; border-radius: var(--radius); border: 1px solid var(--border); box-shadow: var(--shadow); }
+    .metric-title { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; }
+    .metric-value { font-size: 1.4rem; font-weight: 800; margin-top: 4px; }
+
+    .layout-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
+    @media (min-width: 960px) { .layout-grid { grid-template-columns: 380px 1fr; } }
+
+    .card { background: var(--panel); border-radius: var(--radius); padding: 20px; border: 1px solid var(--border); margin-bottom: 20px; box-shadow: var(--shadow); }
+    .card-title { font-size: 1.05rem; font-weight: 700; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; }
+
+    .form-group { margin-bottom: 12px; }
+    label { display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 5px; color: var(--text-muted); }
+    input, select { width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 0.9rem; background: var(--panel-alt); color: var(--text); outline: none; }
+    input:focus, select:focus { border-color: var(--primary); }
+
+    .tag-container { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+    .tag { background: var(--panel-alt); padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; display: flex; align-items: center; gap: 6px; border: 1px solid var(--border); }
+    .tag button { background: none; border: none; color: var(--text-muted); cursor: pointer; }
+    .tag button:hover { color: var(--danger); }
+
+    .tab-group { display: flex; gap: 4px; background: var(--panel-alt); padding: 4px; border-radius: 8px; margin-bottom: 12px; }
+    .tab-btn { flex: 1; padding: 6px; border: none; border-radius: 6px; background: transparent; color: var(--text-muted); font-size: 0.75rem; font-weight: 600; cursor: pointer; }
+    .tab-btn.active { background: var(--primary); color: #fff; }
+
+    .split-config { max-height: 160px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; padding: 8px; background: var(--panel-alt); margin-bottom: 12px; }
+    .split-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; font-size: 0.85rem; }
+
+    .settlement-card { background: var(--panel-alt); border-left: 4px solid var(--primary); padding: 12px; border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+    
+    .ledger-table, .expense-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    .ledger-table th, .expense-table th { text-align: left; padding: 8px 10px; color: var(--text-muted); border-bottom: 1px solid var(--border); }
+    .ledger-table td, .expense-table td { padding: 8px 10px; border-bottom: 1px solid var(--border); }
+
+    .badge { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 600; background: var(--panel-alt); border: 1px solid var(--border); }
+    .badge-pos { color: var(--success); }
+    .badge-neg { color: var(--danger); }
+
+    .progress-bar { display: flex; height: 8px; border-radius: 4px; overflow: hidden; background: var(--panel-alt); margin: 8px 0; }
+    .progress-segment { height: 100%; }
+
+    /* Modal */
+    .modal-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); align-items: center; justify-content: center; z-index: 1000; padding: 16px; }
+    .modal-backdrop.active { display: flex; }
+    .modal { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; max-width: 440px; width: 100%; text-align: center; box-shadow: var(--shadow); }
+
+    @media print {
+      body { background: #fff !important; color: #000 !important; }
+      header, aside, .toolbar, .metrics-grid, #qr-modal, .card:not(#ledger-card):not(#expenses-card) { display: none !important; }
+      .card { border: none !important; box-shadow: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="brand">
+        <h1>Split & Share Ultra</h1>
+        <p>Smart settlement engine with UPI QR codes, receipt uploads & statements.</p>
+      </div>
+      <div class="toolbar">
+        <select id="currency-select" style="width: auto;">
+          <option value="₹">INR (₹)</option>
+          <option value="$">USD ($)</option>
+          <option value="€">EUR (€)</option>
+          <option value="£">GBP (£)</option>
+        </select>
+        <button id="theme-btn" class="btn btn-outline btn-sm">Theme</button>
+        <button id="undo-btn" class="btn btn-outline btn-sm" title="Undo Last Entry">↩ Undo</button>
+        <button id="export-csv-btn" class="btn btn-outline btn-sm">Export CSV</button>
+        <button id="export-json-btn" class="btn btn-outline btn-sm">JSON</button>
+        <button id="print-btn" class="btn btn-outline btn-sm">Print Statement</button>
+        <button id="reset-btn" class="btn btn-danger btn-sm">Reset</button>
+      </div>
+    </header>
+
+    <!-- Metrics Summary -->
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-title">Total Spending</div>
+        <div class="metric-value" id="m-total">₹0.00</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-title">Total Transactions</div>
+        <div class="metric-value" id="m-count">0</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-title">Active Members</div>
+        <div class="metric-value" id="m-members">0</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-title">Debts Unsettled</div>
+        <div class="metric-value" id="m-debts">0</div>
+      </div>
+    </div>
+
+    <div class="layout-grid">
+      <!-- Left Forms -->
+      <aside>
+        <!-- Member Management with UPI VPA -->
+        <div class="card">
+          <h2 class="card-title">1. Group Members</h2>
+          <form id="member-form">
+            <div style="display: flex; gap: 6px; margin-bottom: 6px;">
+              <input type="text" id="member-name" placeholder="Full Name" required />
+              <input type="text" id="member-upi" placeholder="UPI ID (optional)" style="max-width: 130px;" />
+              <button type="submit" class="btn btn-sm">Add</button>
+            </div>
+          </form>
+          <div id="members-list" class="tag-container"></div>
+        </div>
+
+        <!-- Add Transaction -->
+        <div class="card">
+          <h2 class="card-title">2. Add Transaction</h2>
+          <form id="exp-form">
+            <div class="form-group">
+              <label>Description</label>
+              <input type="text" id="exp-desc" placeholder="e.g. Dinner, Airbnb, Groceries" required />
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+              <div class="form-group">
+                <label>Amount</label>
+                <input type="number" id="exp-amount" min="0.01" step="0.01" placeholder="0.00" required />
+              </div>
+              <div class="form-group">
+                <label>Category</label>
+                <select id="exp-cat">
+                  <option value="Food">🍽️ Food</option>
+                  <option value="Stay">🏨 Stay</option>
+                  <option value="Travel">🚕 Travel</option>
+                  <option value="Entertainment">🎟️ Leisure</option>
+                  <option value="General">📦 General</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Paid By</label>
+              <select id="exp-payer" required></select>
+            </div>
+
+            <label>Split Ratio</label>
+            <div class="tab-group">
+              <button type="button" class="tab-btn active" data-mode="equal">Equal</button>
+              <button type="button" class="tab-btn" data-mode="exact">Exact</button>
+              <button type="button" class="tab-btn" data-mode="percent">Percent</button>
+            </div>
+
+            <div class="split-config" id="split-config"></div>
+
+            <div class="form-group">
+              <label>Receipt Image (Optional)</label>
+              <input type="file" id="exp-receipt" accept="image/*" style="font-size: 0.8rem;" />
+            </div>
+
+            <button type="submit" class="btn" style="width: 100%;">Record Expense</button>
+          </form>
+        </div>
+
+        <!-- Category Progress -->
+        <div class="card">
+          <h2 class="card-title" style="font-size: 0.9rem;">Category Breakdown</h2>
+          <div class="progress-bar" id="category-progress"></div>
+          <div id="category-legend" style="display: flex; flex-wrap: wrap; gap: 8px; font-size: 0.75rem;"></div>
+        </div>
+      </aside>
+
+      <!-- Right Panels -->
+      <main>
+        <!-- Settlement Optimizer -->
+        <div class="card">
+          <h2 class="card-title">Settlement Optimizer (Min Transfers)</h2>
+          <div id="settlements-list">
+            <div style="color: var(--text-muted); font-size: 0.85rem;">All balances settled up.</div>
+          </div>
+        </div>
+
+        <!-- Per-Member Balance Ledger -->
+        <div class="card" id="ledger-card">
+          <h2 class="card-title">Individual Balances & Statements</h2>
+          <table class="ledger-table">
+            <thead>
+              <tr>
+                <th>Member</th>
+                <th>Total Paid</th>
+                <th>Owed Share</th>
+                <th>Net Balance</th>
+              </tr>
+            </thead>
+            <tbody id="ledger-body">
+              <tr><td colspan="4" style="color: var(--text-muted); text-align: center;">No members added.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Transaction Log -->
+        <div class="card" id="expenses-card">
+          <div class="card-title">
+            <span>Transaction Ledger</span>
+            <input type="text" id="filter-input" placeholder="Search..." style="width: 140px; padding: 4px 8px; font-size: 0.75rem;" />
+          </div>
+          <div style="overflow-x: auto;">
+            <table class="expense-table">
+              <thead>
+                <tr>
+                  <th>Item</th>
+                  <th>Cat</th>
+                  <th>Payer</th>
+                  <th>Amount</th>
+                  <th>Receipt</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="expense-table-body">
+                <tr><td colspan="6" style="color: var(--text-muted); text-align: center;">No expenses recorded.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- QR Modal -->
+  <div id="qr-modal" class="modal-backdrop">
+    <div class="modal">
+      <h3 id="qr-title" style="margin-bottom: 8px; font-size: 1.1rem;">Scan to Pay</h3>
+      <p id="qr-subtitle" style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 16px;"></p>
+      <div style="background: #fff; padding: 12px; display: inline-block; border-radius: 8px; margin-bottom: 16px;">
+        <img id="qr-img" src="" alt="UPI QR Code" style="width: 200px; height: 200px; display: block;" />
+      </div>
+      <div>
+        <button class="btn btn-outline btn-sm" onclick="closeQRModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Receipt Lightbox Modal -->
+  <div id="receipt-modal" class="modal-backdrop" onclick="this.classList.remove('active')">
+    <div class="modal" style="max-width: 600px;">
+      <img id="receipt-preview-img" src="" alt="Receipt" style="max-width: 100%; max-height: 70vh; border-radius: 8px;" />
+    </div>
+  </div>
+
+  <script>
+    // State Store
+    const state = {
+      theme: localStorage.getItem('ssu_theme') || 'dark',
+      currency: localStorage.getItem('ssu_currency') || '₹',
+      splitMode: 'equal',
+      members: JSON.parse(localStorage.getItem('ssu_members')) || [], // [{ name, upi }]
+      expenses: JSON.parse(localStorage.getItem('ssu_expenses')) || [],
+      history: []
+    };
+
+    const catColors = {
+      Food: '#f59e0b',
+      Stay: '#8b5cf6',
+      Travel: '#3b82f6',
+      Entertainment: '#ec4899',
+      General: '#10b981'
+    };
+
+    function persist() {
+      localStorage.setItem('ssu_members', JSON.stringify(state.members));
+      localStorage.setItem('ssu_expenses', JSON.stringify(state.expenses));
+      localStorage.setItem('ssu_theme', state.theme);
+      localStorage.setItem('ssu_currency', state.currency);
+    }
+
+    // Theme & Currency
+    function applyTheme() { document.documentElement.setAttribute('data-theme', state.theme); }
+    document.getElementById('theme-btn').onclick = () => {
+      state.theme = state.theme === 'dark' ? 'light' : 'dark';
+      applyTheme();
+      persist();
+    };
+
+    const currSelect = document.getElementById('currency-select');
+    currSelect.value = state.currency;
+    currSelect.onchange = (e) => {
+      state.currency = e.target.value;
+      persist();
+      render();
+    };
+
+    // Tab Switching
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.onclick = (e) => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        e.target.classList.add('active');
+        state.splitMode = e.target.dataset.mode;
+        renderSplitRows();
+      };
+    });
+
+    // Member Handlers
+    document.getElementById('member-form').onsubmit = (e) => {
+      e.preventDefault();
+      const name = document.getElementById('member-name').value.trim();
+      const upi = document.getElementById('member-upi').value.trim();
+      if (!name) return;
+      if (state.members.some(m => m.name.toLowerCase() === name.toLowerCase())) {
+        alert('Member already added.');
+        return;
+      }
+      state.members.push({ name, upi });
+      document.getElementById('member-name').value = '';
+      document.getElementById('member-upi').value = '';
+      persist();
+      render();
+    };
+
+    window.removeMember = function(idx) {
+      const target = state.members[idx].name;
+      if (state.expenses.some(e => e.payer === target || e.splits[target])) {
+        if (!confirm(`Remove ${target}? Related transactions and splits will be modified.`)) return;
+      }
+      state.members.splice(idx, 1);
+      state.expenses = state.expenses.filter(e => e.payer !== target);
+      state.expenses.forEach(e => delete e.splits[target]);
+      persist();
+      render();
+    };
+
+    // Render Split Controls
+    function renderSplitRows() {
+      const container = document.getElementById('split-config');
+      container.innerHTML = '';
+      if (!state.members.length) {
+        container.innerHTML = '<span style="font-size: 0.8rem; color: var(--text-muted);">Add members first</span>';
+        return;
+      }
+
+      state.members.forEach(m => {
+        const row = document.createElement('div');
+        row.className = 'split-row';
+        if (state.splitMode === 'equal') {
+          row.innerHTML = `
+            <label style="display:flex; align-items:center; gap:8px; margin:0; cursor:pointer;">
+              <input type="checkbox" class="split-cb" value="${m.name}" checked style="width:auto;" />
+              ${m.name}
+            </label>
+          `;
+        } else if (state.splitMode === 'exact') {
+          row.innerHTML = `
+            <span>${m.name}</span>
+            <input type="number" step="0.01" min="0" placeholder="0.00" class="split-val" data-name="${m.name}" style="width:90px; padding:3px 6px;" />
+          `;
+        } else if (state.splitMode === 'percent') {
+          row.innerHTML = `
+            <span>${m.name}</span>
+            <div style="display:flex; align-items:center; gap:4px;">
+              <input type="number" step="1" min="0" max="100" placeholder="0" class="split-val" data-name="${m.name}" style="width:65px; padding:3px 6px;" /> %
+            </div>
+          `;
+        }
+        container.appendChild(row);
+      });
+    }
+
+    // Add Expense with File Read
+    document.getElementById('exp-form').onsubmit = async (e) => {
+      e.preventDefault();
+      const desc = document.getElementById('exp-desc').value.trim();
+      const amount = parseFloat(document.getElementById('exp-amount').value);
+      const cat = document.getElementById('exp-cat').value;
+      const payer = document.getElementById('exp-payer').value;
+      const fileInp = document.getElementById('exp-receipt');
+
+      if (!payer || isNaN(amount) || amount <= 0) return;
+
+      const splits = {};
+      if (state.splitMode === 'equal') {
+        const selected = Array.from(document.querySelectorAll('.split-cb:checked')).map(cb => cb.value);
+        if (!selected.length) { alert('Select at least one participant.'); return; }
+        const unit = amount / selected.length;
+        selected.forEach(n => splits[n] = unit);
+      } else if (state.splitMode === 'exact') {
+        let total = 0;
+        document.querySelectorAll('.split-val').forEach(inp => {
+          const v = parseFloat(inp.value) || 0;
+          if (v > 0) splits[inp.dataset.name] = v;
+          total += v;
+        });
+        if (Math.abs(total - amount) > 0.05) {
+          alert(`Split sum (${state.currency}${total.toFixed(2)}) must match expense total (${state.currency}${amount.toFixed(2)})`);
+          return;
+        }
+      } else if (state.splitMode === 'percent') {
+        let totalPct = 0;
+        document.querySelectorAll('.split-val').forEach(inp => {
+          const v = parseFloat(inp.value) || 0;
+          if (v > 0) splits[inp.dataset.name] = (v / 100) * amount;
+          totalPct += v;
+        });
+        if (Math.abs(totalPct - 100) > 0.5) {
+          alert(`Total percentage must equal 100% (currently ${totalPct}%).`);
+          return;
+        }
+      }
+
+      // Convert image if available
+      let receiptData = null;
+      if (fileInp.files && fileInp.files[0]) {
+        receiptData = await new Promise(resolve => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.readAsDataURL(fileInp.files[0]);
+        });
+      }
+
+      state.history.push(JSON.parse(JSON.stringify(state.expenses)));
+
+      state.expenses.push({
+        id: Date.now(),
+        desc,
+        amount,
+        payer,
+        category: cat,
+        splits,
+        receipt: receiptData,
+        date: new Date().toLocaleDateString()
+      });
+
+      document.getElementById('exp-desc').value = '';
+      document.getElementById('exp-amount').value = '';
+      fileInp.value = '';
+      persist();
+      render();
+    };
+
+    // Undo Last Expense
+    document.getElementById('undo-btn').onclick = () => {
+      if (state.history.length > 0) {
+        state.expenses = state.history.pop();
+        persist();
+        render();
+      } else {
+        alert('No actions to undo.');
+      }
+    };
+
+    window.deleteExpense = function(id) {
+      state.history.push(JSON.parse(JSON.stringify(state.expenses)));
+      state.expenses = state.expenses.filter(e => e.id !== id);
+      persist();
+      render();
+    };
+
+    // Calculate Debts
+    function computeBalances() {
+      const net = {};
+      const paid = {};
+      const owed = {};
+
+      state.members.forEach(m => {
+        net[m.name] = 0;
+        paid[m.name] = 0;
+        owed[m.name] = 0;
+      });
+
+      state.expenses.forEach(e => {
+        if (paid[e.payer] !== undefined) paid[e.payer] += e.amount;
+        net[e.payer] = (net[e.payer] || 0) + e.amount;
+        for (const [m, share] of Object.entries(e.splits)) {
+          if (owed[m] !== undefined) owed[m] += share;
+          net[m] = (net[m] || 0) - share;
+        }
+      });
+
+      // Greedy Settlement
+      const debtors = [];
+      const creditors = [];
+
+      Object.entries(net).forEach(([name, balance]) => {
+        const val = Math.round(balance * 100) / 100;
+        if (val < -0.01) debtors.push({ name, bal: -val });
+        if (val > 0.01) creditors.push({ name, bal: val });
+      });
+
+      debtors.sort((a, b) => b.bal - a.bal);
+      creditors.sort((a, b) => b.bal - a.bal);
+
+      const transfers = [];
+      let i = 0, j = 0;
+      while (i < debtors.length && j < creditors.length) {
+        const settleAmt = Math.min(debtors[i].bal, creditors[j].bal);
+        transfers.push({
+          from: debtors[i].name,
+          to: creditors[j].name,
+          amount: settleAmt
+        });
+        debtors[i].bal -= settleAmt;
+        creditors[j].bal -= settleAmt;
+        if (debtors[i].bal < 0.01) i++;
+        if (creditors[j].bal < 0.01) j++;
+      }
+
+      return { net, paid, owed, transfers };
+    }
+
+    // Direct Settle
+    window.settlePayment = function(from, to, amt) {
+      state.history.push(JSON.parse(JSON.stringify(state.expenses)));
+      state.expenses.push({
+        id: Date.now(),
+        desc: `Settlement: ${from} → ${to}`,
+        amount: amt,
+        payer: from,
+        category: 'General',
+        splits: { [to]: amt },
+        receipt: null,
+        date: new Date().toLocaleDateString()
+      });
+      persist();
+      render();
+    };
+
+    // UPI QR Code Generator
+    window.openUPIModal = function(to, amt) {
+      const recipient = state.members.find(m => m.name === to);
+      const vpa = recipient ? recipient.upi : '';
+      if (!vpa) {
+        alert(`${to} has not configured a UPI ID. Edit the member to add their UPI ID.`);
+        return;
+      }
+      
+      const upiUrl = `upi://pay?pa=${encodeURIComponent(vpa)}&pn=${encodeURIComponent(to)}&am=${amt.toFixed(2)}&cu=INR`;
+      const qrApi = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(upiUrl)}`;
+
+      document.getElementById('qr-title').textContent = `Pay ${to}`;
+      document.getElementById('qr-subtitle').textContent = `Amount: ₹${amt.toFixed(2)} to ${vpa}`;
+      document.getElementById('qr-img').src = qrApi;
+      document.getElementById('qr-modal').classList.add('active');
+    };
+
+    window.closeQRModal = function() {
+      document.getElementById('qr-modal').classList.remove('active');
+    };
+
+    window.viewReceipt = function(dataUrl) {
+      document.getElementById('receipt-preview-img').src = dataUrl;
+      document.getElementById('receipt-modal').classList.add('active');
+    };
+
+    // Render Orchestrator
+    function render() {
+      // 1. Members
+      const membersList = document.getElementById('members-list');
+      const expPayer = document.getElementById('exp-payer');
+      membersList.innerHTML = '';
+      expPayer.innerHTML = '<option value="" disabled selected>Select Payer</option>';
+
+      state.members.forEach((m, idx) => {
+        const tag = document.createElement('div');
+        tag.className = 'tag';
+        tag.innerHTML = `<span><strong>${m.name}</strong>${m.upi ? ` (${m.upi})` : ''}</span><button onclick="removeMember(${idx})">&times;</button>`;
+        membersList.appendChild(tag);
+
+        const opt = document.createElement('option');
+        opt.value = m.name;
+        opt.textContent = m.name;
+        expPayer.appendChild(opt);
+      });
+
+      renderSplitRows();
+
+      // 2. Balances & Ledger
+      const { net, paid, owed, transfers } = computeBalances();
+      const ledgerBody = document.getElementById('ledger-body');
+      ledgerBody.innerHTML = '';
+
+      if (!state.members.length) {
+        ledgerBody.innerHTML = '<tr><td colspan="4" style="color: var(--text-muted); text-align: center;">No members found.</td></tr>';
+      } else {
+        state.members.forEach(m => {
+          const netVal = net[m.name] || 0;
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td><strong>${m.name}</strong></td>
+            <td>${state.currency}${(paid[m.name] || 0).toFixed(2)}</td>
+            <td>${state.currency}${(owed[m.name] || 0).toFixed(2)}</td>
+            <td>
+              <span class="badge ${netVal >= 0 ? 'badge-pos' : 'badge-neg'}">
+                ${netVal >= 0 ? '+' : ''}${state.currency}${netVal.toFixed(2)}
+              </span>
+            </td>
+          `;
+          ledgerBody.appendChild(tr);
+        });
+      }
+
+      // 3. Settlement Cards
+      const setList = document.getElementById('settlements-list');
+      setList.innerHTML = '';
+      if (!transfers.length) {
+        setList.innerHTML = '<div style="color: var(--text-muted); font-size: 0.85rem;">All balances are fully settled!</div>';
+      } else {
+        transfers.forEach(t => {
+          const card = document.createElement('div');
+          card.className = 'settlement-card';
+          card.innerHTML = `
+            <div>
+              <strong>${t.from}</strong> owes <strong>${t.to}</strong>
+              <div style="font-weight: 700; color: var(--primary); font-size: 1.05rem;">${state.currency}${t.amount.toFixed(2)}</div>
+            </div>
+            <div style="display: flex; gap: 6px;">
+              ${state.currency === '₹' ? `<button class="btn btn-sm btn-outline" onclick="openUPIModal('${t.to}', ${t.amount})">UPI QR</button>` : ''}
+              <button class="btn btn-sm btn-success" onclick="settlePayment('${t.from}', '${t.to}', ${t.amount})">Settle</button>
+            </div>
+          `;
+          setList.appendChild(card);
+        });
+      }
+
+      // 4. Expenses Table
+      renderExpenseTable();
+
+      // 5. Category Breakdown
+      renderAnalytics();
+
+      // 6. Metrics
+      const totalSum = state.expenses.reduce((acc, c) => acc + c.amount, 0);
+      document.getElementById('m-total').textContent = `${state.currency}${totalSum.toFixed(2)}`;
+      document.getElementById('m-count').textContent = state.expenses.length;
+      document.getElementById('m-members').textContent = state.members.length;
+      document.getElementById('m-debts').textContent = transfers.length;
+    }
+
+    function renderExpenseTable() {
+      const q = document.getElementById('filter-input').value.toLowerCase();
+      const body = document.getElementById('expense-table-body');
+      body.innerHTML = '';
+
+      const list = state.expenses.filter(e => e.desc.toLowerCase().includes(q));
+      if (!list.length) {
+        body.innerHTML = '<tr><td colspan="6" style="color: var(--text-muted); text-align: center;">No transactions found.</td></tr>';
+        return;
+      }
+
+      list.slice().reverse().forEach(e => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><strong>${e.desc}</strong><div style="font-size:0.75rem; color:var(--text-muted);">${e.date}</div></td>
+          <td><span class="badge">${e.category}</span></td>
+          <td>${e.payer}</td>
+          <td style="font-weight:700;">${state.currency}${e.amount.toFixed(2)}</td>
+          <td>
+            ${e.receipt ? `<button class="btn btn-outline btn-sm" onclick="viewReceipt('${e.receipt}')">Receipt</button>` : '<span style="color:var(--text-muted); font-size:0.75rem;">None</span>'}
+          </td>
+          <td>
+            <button class="btn btn-outline btn-sm" style="color:var(--danger);" onclick="deleteExpense(${e.id})">&times;</button>
+          </td>
+        `;
+        body.appendChild(tr);
+      });
+    }
+
+    function renderAnalytics() {
+      const catTotals = {};
+      let total = 0;
+      state.expenses.forEach(e => {
+        catTotals[e.category] = (catTotals[e.category] || 0) + e.amount;
+        total += e.amount;
+      });
+
+      const prog = document.getElementById('category-progress');
+      const legend = document.getElementById('category-legend');
+      prog.innerHTML = '';
+      legend.innerHTML = '';
+
+      if (total === 0) {
+        prog.innerHTML = '<div class="progress-segment" style="width: 100%; background: var(--border);"></div>';
+        return;
+      }
+
+      Object.entries(catTotals).forEach(([c, sum]) => {
+        const pct = ((sum / total) * 100).toFixed(1);
+        const col = catColors[c] || '#94a3b8';
+
+        const bar = document.createElement('div');
+        bar.className = 'progress-segment';
+        bar.style.width = `${pct}%`;
+        bar.style.backgroundColor = col;
+        prog.appendChild(bar);
+
+        const leg = document.createElement('div');
+        leg.innerHTML = `<span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:${col}; margin-right:4px;"></span>${c} (${pct}%)`;
+        legend.appendChild(leg);
+      });
+    }
+
+    // Filter Listeners
+    document.getElementById('filter-input').oninput = renderExpenseTable;
+
+    // Export CSV
+    document.getElementById('export-csv-btn').onclick = () => {
+      let csv = 'Description,Category,Payer,Amount,Date\n';
+      state.expenses.forEach(e => {
+        csv += `"${e.desc}","${e.category}","${e.payer}",${e.amount},"${e.date}"\n`;
+      });
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `split_share_${Date.now()}.csv`;
+      a.click();
+    };
+
+    // Export JSON
+    document.getElementById('export-json-btn').onclick = () => {
+      const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `split_share_state_${Date.now()}.json`;
+      a.click();
+    };
+
+    // Print
+    document.getElementById('print-btn').onclick = () => window.print();
+
+    // Reset All
+    document.getElementById('reset-btn').onclick = () => {
+      if (confirm('Clear all members and historical data?')) {
+        state.members = [];
+        state.expenses = [];
+        state.history = [];
+        persist();
+        render();
+      }
+    };
+
+    // Boot
+    applyTheme();
+    render();
+  </script>
+</body>
+</html>
